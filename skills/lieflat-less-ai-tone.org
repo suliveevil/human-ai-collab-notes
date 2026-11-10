@@ -1,0 +1,27 @@
+
+
+
+
+
+
+[[https://github.com/larashero3-dotcom/lieflat-less-ai-tone][larashero3-dotcom/lieflat-less-ai-tone: 一个基于 520 万字语料统计的去 AI 味 skill · An AI-tone removal skill grounded in a 5.2-million-character corpus study]]
+
+
+
+
+
+
+
+
+** 类似 skills
+
+[[https://github.com/op7418/Humanizer-zh][op7418/Humanizer-zh: Humanizer 的汉化版本，Claude Code Skills，旨在消除文本中 AI 生成的痕迹。]]
+
+
+[[https://github.com/KKKKhazix/human-writing][KKKKhazix/human-writing: 让 AI 写的中文读起来像一个具体的人在说话。通用创作与改稿 Skill，开箱即用。]]
+
+[[https://github.com/Nanako0129/sepia][Nanako0129/sepia: De-AI writing skill for any Agent Skills-compatible agent (77+ via the Skills CLI), with native plugins for Claude Code, Codex, Grok Build, and Antigravity. Narrative-architecture repair for fiction, venue-matched rules for professional prose. Based on StoryScope (arXiv:2604.03136).
+]]
+
+
+
