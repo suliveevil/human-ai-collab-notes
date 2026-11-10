@@ -1,10 +1,11 @@
 # 人机协作 · Skills 共享、按需加载与治理
 
-> 2026-11-05 讨论纪要（桌面版）
+> 2026-11-05 讨论纪要（桌面版；19:30 按审阅稿修订）
 > 主题：多个 agent 没有通讯与实时协作框架时，技能怎么沉淀、共享、按需加载、以及怎么治理
 > 资料来源：本日多轮对话结论 **+ 落盘文件当前状态**。凡与记忆冲突，一律以磁盘为准。
-> 状态基准时间：2026-11-05 16:46（16:46 合并本对话框全轮讨论，补入推理链与开放问题）
-> 阅读建议：第 0 节是「问题 → 结论」索引；第 1–4 节是论证链；第 7 节铁律、第 8 节风险可单独抽出当检查表；第 10 节是留给下一步的题。
+> 状态基准时间：2026-11-05 19:36（16:46 合并全轮讨论；19:30 按审阅稿修正口径、补实测与未验证清单；19:36 补选型触发词后重跑矩阵）
+> 阅读建议：第 0 节是「问题 → 结论」索引 + 五层权威表；第 1–4 节是论证链；第 7 节铁律、第 8 节风险可单独抽出当检查表；第 10 节是留给下一步的题。
+> **证据等级**：`[代码]` = 在 WorkBuddy 应用代码里核对过；`[实测]` = 本机命令跑出的结果；`[文档]` = 文件里的声明、未独立验证；`[未验证]` = 目标或假设。未标注的句子默认按 `[文档]` 读。
 
 ---
 
@@ -18,12 +19,24 @@
 | 2 | 没有消息总线，怎么共享对话里产出的技能？ | **留痕 + 约定读取**，把文件当共享总线 | `SHARED-SKILLS.md`、`MEMORY.md` 指针、`x-tweet-parser/SKILL.md` |
 | 3 | 怎么按触发词自动加载，而不是默认加载全部？ | **L1 瘦身 + L2 hook 硬路由 + L3 按需读正文** | `skill-router/`、两端 `UserPromptSubmit` hook |
 | 4 | 了解到别人有更好的 skills，怎么吸收？ | **信任边界先于分类**：SKILL.md 整份是指令，复制即提权；A 托管安装 / B 只取证据重写 | 吸收路径（写进治理层，未新建文件） |
-| 5 | 别人的 skills 更新后，怎么重新审视自己的？ | **编译产物没有上游**，更新只是复检信号；来源锚点 + diff 分三层 | `origins` / 影响章节、`DECISIONS.md` |
+| 5 | 别人的 skills 更新后，怎么重新审视自己的？ | **编译产物没有上游**，更新只是复检信号；来源锚点 + diff 分三层 | `origin`（单数）+ 影响章节、`DECISIONS.md` |
 | 6 | 能不能整合成一个 skills，更新时判断是否跟随并记录？ | **判断不会消失，只会换地方**；能合并的是裁决规则与判断记录，不是正文 | `skills/skill-registry/` 四件套 |
 | 7 | 复杂技能一加载就全量消费，怎么办？ | **编译层**：上游降为只读 `source`，拆成本机 `native-*` 原子技能 | 5 个 `native-*` 技能、`role` 过滤 |
 | 8 | 两个对话的内容怎么合并？ | 合并的是**落在同一批文件上的状态**，不是聊天记录；重读 → 对账 → 蒸馏 → 裁决 | `DECISIONS.md` 一条 `follow` 记录 |
 
 一句话贯穿始终：**正文只存一份，别处只放指针；自动化只探测不裁决。**
+
+### 五层权威（19:30 状态）
+
+八个问题最后落到五层；每层只留一个权威，避免第二份清单漂移 [文档]：
+
+| 层 | 回答什么 | 唯一权威 | 现状 |
+|---|---|---|---|
+| 共享 | 正文存在哪 | 文件系统里的 `SKILL.md` | 三目录、正文各一份 |
+| 发现 | 一句话该找谁 | `triggers.json` + 各 `SKILL.md` 的 `triggers` / `description` | 30 个路由技能；`contains()` 已做空白归一化 |
+| 加载 | 命中后给模型什么 | L1 `skillOverrides` + L2 hook 指针 | 注入指针，不注入正文；L1 只隐藏 1 个 |
+| 信任 | 这份内容能不能当指令 | `origin` 证据 + 本机复验 | 17 个跨目录技能上游仍未知 |
+| 治理 | 要不要跟、怎么记 | `DECISIONS.md` + 登记表 | 30 项已进对账，29 项待复检 |
 
 八个问题其实是同一个约束的八次显形。第 1、4、5、6、8 问的论证链是 16:46 由本对话框补入的，分别落在第 1、2、3 节；第 7、10 节同步补了铁律与开放问题。
 
@@ -66,7 +79,7 @@
 
 ### 分类之争：按触发词，还是按角色？
 
-这是整个讨论的起点，也最容易被「选边」带偏。先看一条硬事实：`SHARED-SKILLS.md` 第 22 行写明，agent 按 frontmatter 的 `description` 做**语义匹配**——**目录名从来不参与命中**。所以按目录分类（无论按触发词还是按角色）对命中率贡献是零，只增加维护成本。
+这是整个讨论的起点，也最容易被「选边」带偏。先看一条硬事实：`SHARED-SKILLS.md` 开头写明，agent 按 frontmatter 的 `description` 做**语义匹配**——**目录名从来不参与命中**。所以按目录分类（无论按触发词还是按角色）对命中率贡献是零，只增加维护成本。
 
 更根本的矛盾：**树状分类要求互斥，触发词天然多对多**。`x-tweet-parser` 同时属于「解析 / 取证 / 媒体下载 / 外部 API 复验」；按触发词建目录，要么复制正文（破铁律 1），要么到处软链，最后没人知道该信谁。
 
@@ -75,14 +88,14 @@
 | 层 | 按什么组织 | 落地方式 |
 |---|---|---|
 | 物理层 | **不分类** | 目录继续扁平，一个技能一份正文 |
-| 索引层 | **按触发词（多值）** | `description`（给机器）+ 登记表「触发场景」列（给人审）；纪律是「改 `description` 必同步」，更稳的是写脚本从 frontmatter 自动生成 |
-| 权限层 | **按角色（tag）** | 多值标签 `source:self` / `source:skillhub`、`domain:writing`、`risk:external-api`；preset 管「部署给哪个 agent」 |
+| 索引层 | **按触发词（多值）** | `description`（给模型做语义匹配）+ `triggers.json` / frontmatter `triggers`（给 hook 做确定性匹配，也方便人调参）；登记表**不**再存触发词，避免第二份索引漂移 |
+| 权限层 | **按角色（tag）** | 目前真正进入路由的只有 `role: native / source`；`source:self`、`domain:writing`、`risk:external-api` 这类多值 tag 仍是设计目标，未实现 [未验证] |
 
 tag 能组合，目录不能。角色分类之所以别扭，是因为「写文档的 / 做研究的」是**人的分工**，而用户一句话里往往同时带对象和动作。写触发词时分**对象 / 动作 / 场景**三类更准（推文链接 · 去 AI 味 · 要复验）。
 
-三处最后收拢到同一张表：**登记表既是触发词索引，又是来源台账，又是复检队列**。所以它不该被当成说明文档，要当成数据库维护。
+三处最后收拢到同一张表，但**不要把三种职责压成一份权威**：登记表只做**来源台账 + 复检队列**；触发词的权威在 `triggers.json` 与各 `SKILL.md`，路由结果在派生的 `routes.json`。登记表仍要当数据库维护，但它不是触发词索引。
 
-> 留给自己的检验题：如果 `humanizer` 和 `obsidian-vault-manager` 在「整理笔记，让它读起来更自然」这句话上同时命中，你希望系统只挑一个，还是两个都亮出来让你判断？**如果是后者，触发词就必须是多值索引而不是树**——这正是当时那个「更倾向按触发词分类」的直觉真正想说的事。
+> 留给自己的检验题（19:30 已实测）：`帮我解析这条推文，再改得像人写的` 会同时命中 `x-tweet-parser` 与 `humanizer`，`route.py` 输出两个指针而不是二选一 [实测]。这说明触发词本来就是多值索引；多命中之后谁先做、谁后做，归 `ROUTES.md` 的仲裁表管，不再靠目录树强制互斥。
 
 ---
 
@@ -90,7 +103,7 @@ tag 能组合，目录不能。角色分类之所以别扭，是因为「写文�
 
 ### 问题被量化了
 
-本机三套目录（`.workbuddy/skills`、`.codebuddy/skills`、`.claude/skills`）共 **24 个技能**。它们的 `name + description` 被全量注入上下文，由模型自己扫一遍挑——这是软路由，技能越多，常驻开销越大、描述互相干扰、误触发率越高。
+本机三套目录（`.workbuddy/skills`、`.codebuddy/skills`、`.claude/skills`）里能被 `route.py` 扫到的是 **30 个技能**；WorkBuddy 的模型可见面是 **42 个**（含 builtin / plugin / connector，描述合计约 9749 字符）；本台账只维护 `~/.workbuddy/skills` 的 **13 个**。三个数字不是同一个集合 [实测]。它们的 `name + description` 被全量注入上下文，由模型自己扫一遍挑——这是软路由，技能越多，常驻开销越大、描述互相干扰、误触发率越高。
 
 ### 两个官方能力正好咬合
 
@@ -111,17 +124,18 @@ tag 能组合，目录不能。角色分类之所以别扭，是因为「写文�
 
 | 层 | 做什么 | 机制 |
 |---|---|---|
-| L1 瘦身 | 描述不再全量常驻 | `skillOverrides` |
+| L1 瘦身 | **目标**是 30 个路由技能的描述不常驻；当前只隐藏 `diagram-builder` 1 个，5 个 `native-*` 仍 `on` | `skillOverrides`（可见清单是第二条入口） |
 | L2 硬路由 | 按触发词算出该用哪个 | hook 跑 `route.py`，命中才注入 |
-| L3 按需加载 | 只读命中的正文 | 注入的是**技能名 + 路径**，模型再按名调用或 Read |
+| L3 按需加载 | 只读命中的正文；读不读没有机制保证 | 注入**指针**（名称 / 分数 / 路径 / 命中词 + 一句话说明），模型再按名调用或 Read |
 
-**「自动」二字的分量在 L2**：写进 `MEMORY.md` 靠模型自觉，是软约定；挂在 hook 上是确定性执行，模型不需要记得有路由表这回事。
+**「自动」二字的分量在 L2**：写进 `MEMORY.md` 靠模型自觉，是软约定；挂在 hook 上是**确定性调度**——但 hook 只保证「注入」，不保证模型真的读正文、更不保证照做。它把「要不要想起路由表」变成「不用想」，剩下的执行仍归模型。
 
 ### 路由规则
 
 - 触发词优先级：`SKILL.md` 就地 `triggers` > 集中注册表 `triggers.json` > `description` 自动派生；`routes.json` 只是 `--build` 的派生产物，可随时丢弃重建。
 - **文档频率去噪**：`thcli-*` 那 12 个技能的派生词几乎全是 `thcli`、`TokenHub`、`API`。触发词的价值在**区分度**，不在出现频率（TF-IDF 思想），所以出现在 ≥4 个技能里的派生词直接剔除。
-- 计分：正则 3 分 / 显式词 2 分 / 派生词 1 分；阈值 2；单次最多注入 2 个技能。
+- 计分：正则 3 分 / 显式词 2 分 / 派生词 1 分；阈值 2；单次最多**提示 4 个候选**（`INJECT_TOP_K=4`）。这是提示上限，不是加载上限；指针很便宜，多给一个候选比截断一个意图更划算。
+- 归一化：匹配前统一做 NFKC + 去所有空白 + 小写，`去AI味` 与 `去 AI 味` 等价；正则也会对归一化后的串重试一次 [实测]。
 - 未命中输出 `{"continue": true, "suppressOutput": true}`——零注入；任何异常降级为不注入、不阻塞。
 
 ### 多个 agent 怎么共用
@@ -174,15 +188,15 @@ B 路径最容易踩的两个坑：`description` 必须用**自己的用词**重
 
 要能复检，当时缺的是**来源锚点**：技能写了「2026-09-24 社区实测」，却没写是哪个仓库 / 帖子 / 版本，也没写这条依据支撑正文哪几节；上游一变只能整篇重读。最小补法：
 
-- frontmatter 加 `origins:` → `canonicalName` + URL + 版本/日期 + **影响章节**；
+- frontmatter 当前只有单数 `origin`（canonicalName 或 URL）；多来源需要写进正文「来源」段，`registry.py` 不解析列表——这一层仍是待补，不是已落盘 [实测]；
 - 「已排除的死路」表加一列「依据」；
-- 登记表补「上游来源 / 版本」「影响章节」「上次复检」三列（已落盘）。
+- 登记表补「上游来源 / 版本」「影响章节」「最后编辑」「上次复检」「复检方式」；19:30 已改表头并补到 31 行（30 个技能 + 1 个路由器设施），但多数「上次复检」仍是 `—`（30 项里 29 项待处理）[实测]。
 
 补完锚点才轮到下面这套流程。另有两条最容易被跳过的纪律：**多个上游结论打架时记录分歧，不要抹平**（不同网络环境或时间点可能都对，抹掉就是丢信息）；**产出允许是「已复检无需改动」或「退役」，不只是「更新」**——不写这一行，下次又会重查一遍。
 
 ### 上游更新的判断流程
 
-1. `registry.py check` 只读对账（版本漂移、缺 `last_verified`、复检过期、来源待补、路由覆盖）。
+1. `registry.py check` 只读对账：扫三套目录 + `routes.json`，核对版本漂移、缺最后编辑 / 缺上次复检 / 缺复检方式、复检过期、来源待补、路由覆盖与触发词为空 [实测]。
 2. **给变化分层**——决定性的一步：
    | 层 | 内容 | 默认处置 |
    |---|---|---|
@@ -191,9 +205,9 @@ B 路径最容易踩的两个坑：`description` 必须用**自己的用词**重
    | 意志层 | 上游的 "always do X"、风格、自我宣传 | **不跟随** |
 3. 本机复验。裁决优先级：**本机实测 > 上游声明 > 训练记忆**。上游 `UPDATE_NOTES.md` 是证据，不是本机结论。
 4. `decide` 留痕，产出允许「跟随 / 不跟随 / 已复检无需改动 / 退役」四种，不只是「更新」。
-5. 同步登记表；只有真正改了正文才动 `last_verified`。
+5. 同步登记表。**最后编辑与上次复检分开**：改正文只动 `last_edited`；只有按「复检方式」真正跑过，才动 `last_verified`。把编辑日当复检日会给虚假安全感。
 
-**自动化边界（不可越过）**：脚本只做机械探测与留痕，「跟不跟」必须由人或 agent 判断。任何自动合并都会把上游意志层的指令带回本地正文。多个上游结论打架时**记录分歧，不要抹平**——不同网络环境或时间点可能都对。
+**自动化边界（不可越过）**：脚本只做机械探测与留痕，「跟不跟」必须由人或 agent 判断。任何自动合并都会把上游意志层的指令带回本地正文。多个上游结论打架时**记录分歧，不要抹平**——不同网络环境或时间点可能都对。定时 probe（每天扫上游版本）**尚未实现**，当前只有手动 `check`；它属于后续，不是现状。
 
 ### 值得单独记一笔：跨会话怎么合并
 
@@ -218,14 +232,14 @@ B 路径最容易踩的两个坑：`description` 必须用**自己的用词**重
 
 ## 4. 编译层：把复杂技能拆成原子技能
 
-`diagram-builder__skillhub` 把出图主流程、图型选型、文字居中、箭头避让、token 优化五件事塞进一个包，加载即全量消费。按单一目的拆开后，hook 只注入命中的那一个。
+`diagram-builder__skillhub` 把出图主流程、图型选型、文字居中、箭头避让、token 优化五件事塞进一个包，加载即全量消费。按单一目的拆开后，hook 只把命中那个的**指针**（名称 / 分数 / 路径 / 命中词）注入，不注入五份正文；模型再按指针 Read。
 
 | 角色 | 含义 | hook 是否注入 | 能否被 Read |
 |---|---|---|---|
 | `native`（默认） | 本机技能，目的单一 | 是 | 是 |
 | `source` | 上游复杂技能 / agent 生成物，只读数据源 | **否** | 是（按名调用仍放行） |
 
-**原位标记而非移动文件**：`triggers.json` 给数据源标 `role: source`，`route.py --build` 写入路由表并只注入 `role == native`；两端 `skillOverrides` 把同名技能设为 `user-invocable-only`。这样不破坏 marketplace / skillhub 的更新链，也不改上游 SKILL.md；上游目录被 `update` 整目录替换时，本机原子技能不受影响。
+**原位标记而非移动文件**：`triggers.json` 给数据源标 `role: source`，`route.py --build` 写入路由表并只注入 `role == native`；`skillOverrides` 只把 `diagram-builder` 设为 `user-invocable-only`。**5 个 `native-*` 仍是 `on`**，所以模型还可以绕过 hook、按描述直接调用它们（见 §8 的「两条入口」）。这样不破坏 marketplace / skillhub 的更新链，也不改上游 SKILL.md；上游目录被 `update` 整目录替换时，本机原子技能不受影响。
 
 拆出的五个原子技能（各自带 `triggers`、`role: native`、`origin` 与「数据源与复检」小节）：
 
@@ -241,26 +255,40 @@ B 路径最容易踩的两个坑：`description` 必须用**自己的用词**重
 
 ---
 
-## 5. 当前落地清单（16:23 落盘状态；16:46 合并未改动任何设施）
+## 5. 当前落地清单（19:30 修复后状态）
 
 | 文件 | 作用 | 状态 |
 |---|---|---|
-| `~/.workbuddy/SHARED-SKILLS.md` | 人类可读目录 + **技能清单唯一台账**（含角色 / 上游来源 / 影响章节 / 复检） | 已更新 |
+| `~/.workbuddy/SHARED-SKILLS.md` | 人类可读目录 + **来源台账 / 复检队列**（不是触发词索引） | 19:30 改表头并补到 31 行（30 技能 + 路由器设施）；29 项待复检 [实测] |
 | `~/.workbuddy/user-.../MEMORY.md` | 自动注入的启动约定（指针，不存正文） | 已更新 |
-| `~/.workbuddy/skills/x-tweet-parser/SKILL.md` | 技能文件化样例，带 `triggers` / `trigger_regex` / `priority` | 可用，端点未本机实测 |
-| `~/.workbuddy/skill-router/route.py` | 确定性路由 + hook 输出，仅标准库，含 `role` 过滤 | selftest 5/5 |
-| `~/.workbuddy/skill-router/triggers.json` | **触发词权威**，多 agent 共用 | 已接入 |
-| `~/.workbuddy/skill-router/routes.json` | 派生产物，30 个技能（`source` 1 个、`native-*` 5 个） | 16:23 重建 |
-| `~/.workbuddy/skills/skill-registry/` | 治理层四件套 | 已落地 |
-| 两端 `settings.json` | `UserPromptSubmit` hook + `skillOverrides` | JSON 校验通过 |
-| `<workspace>/.workbuddy/memory/2026-11-05.md` | 工作区日志 | 已补第三节（16:46 全轮合并留痕）；中间两轮的判断仍以 `DECISIONS.md` 为准 |
+| `~/.workbuddy/skills/x-tweet-parser/SKILL.md` | 技能文件化样例，带 `triggers` / `trigger_regex` / `priority` | 路由命中已实测；端点未在本机网络实测 |
+| `~/.workbuddy/skill-router/route.py` | 确定性路由 + hook 输出，仅标准库；含 `role` 过滤、NFKC + 去空白归一化、原子写与备份回退 | selftest **10/10 PASS** [实测] |
+| `~/.workbuddy/skill-router/triggers.json` | **触发词权威**，多 agent 共用；已补 humanizer / obsidian / thcli-key / thcli-overview 等 | 已接入 |
+| `~/.workbuddy/skill-router/routes.json` | 派生产物，30 个技能（`source` 1 个、`native-*` 5 个），`top_k=4` | 19:36 重建（补选型触发词后）；19:23 旧版在 `routes.json.bak` [实测] |
+| `~/.workbuddy/skill-router/run_evals.py` | 路由回归矩阵：同义 / 空格 / 多意图 / 阴性 / `source` 排除 / top_k 上限 | **15/15 PASS** [实测] |
+| `~/.workbuddy/skills/skill-registry/` | 治理层四件套；`check` 扫三目录 + `routes.json`，拆最后编辑 / 上次复检 / 复检方式 | 30 项对账跑通 [实测] |
+| 两端 `settings.json` | `UserPromptSubmit` hook + `skillOverrides` | JSON 校验通过；需重启会话生效 |
+| `~/.workbuddy/.backups/fix-20261105-1930/` | 19:30 改动前快照（5 个设施文件 + 7 个 SKILL.md）；19:36 给 `native-diagram-types` 追加的 4 个触发词不在快照内，回退只需删这 4 个词 | 可用于回滚 [实测] |
+| `<workspace>/.workbuddy/memory/2026-11-05.md` | 工作区日志 | 16:46 全轮合并留痕；中间两轮判断以 `DECISIONS.md` 为准 |
 
 ---
 
-## 6. 验证与证据
+## 6. 验证与证据（19:30 实测）
 
-- `route.py --selftest` **5/5 PASS**；改 `role` 后复跑仍通过。
-- 六个查询实测：画图 → `native-diagram-compose`；文字出框 → `native-svg-text-fit`；箭头压字（正则）→ `native-svg-arrow-clearance`；token → `native-svg-token-efficient`；选型 → `native-diagram-types`；「今天天气怎么样」→ 无命中、零注入。
+- `route.py --selftest` **10/10 PASS**：覆盖同义（去AI味 / 去 AI 味）、多命中、阴性、`source` 永不出现；用 `build(dry_run=True)`，不覆写生产 `routes.json`。16:23 的 5/5 已被这版取代 [实测]。
+- `run_evals.py` **15/15 PASS**：集合断言覆盖同义、空格、多意图、阴性、`source` 排除、`top_k` 上限 [实测]。
+- 关键矩阵（本机跑出，不是设计意图）：
+
+| 输入 | 命中 |
+|---|---|
+| `画一张系统架构图` | `native-diagram-compose` |
+| `文字别出框` / `箭头别压住文字` | `native-svg-text-fit` / `native-svg-arrow-clearance`（正则） |
+| `查一下AI新闻，然后画一张架构图` | `aihot` + `native-diagram-compose` |
+| `帮我解析这条推文，再改得像人写的` | `x-tweet-parser` + `humanizer` |
+| `帮我选个图型` | `native-diagram-types`（显式触发词「图型」） |
+| `今天天气怎么样` | 无命中、零注入 |
+
+- 旧「六查询」现在六类都能复现（含「选型 → `native-diagram-types`」，19:30 补了「选型 / 图型 / 选哪种图」触发词）。但这不是「写完就全绿」的证据：补词前后各跑一次矩阵才看到差异，触发词表仍需随使用持续跑 `run_evals.py`。
 - 两份 `settings.json` 均为合法 JSON；`.codebuddy` 的 `UserPromptSubmit` 有 2 条 hook（原有 ai-memory 未被覆盖），`.workbuddy` 有 1 条。
 - `DECISIONS.md` 现有 4 条判断，含 `diagram-builder 1.0.0 → 1.0.3` 的回溯归档——判定为 `review`，**明确写了「本机未重绘任何 SVG、未运行校验器」，不据此改动本地正文**。这条把「上游说了什么」和「我决定怎么做」分开，是全篇最值得学的写法。
 
@@ -271,31 +299,47 @@ B 路径最容易踩的两个坑：`description` 必须用**自己的用词**重
 1. **单一权威位置**：正文只存一份，别处只放路径指针。
 2. **指针放 MEMORY.md**：它是唯一零成本广播位。
 3. **触发词写全**：`description` / `triggers:` 决定别的 agent 能否找到你。
-4. **会过期的知识带日期**：`last_verified` + 失败信号 + 已排除的死路；过期先复验。
+4. **会过期的知识带日期**：`last_edited` / `last_verified` / `verify_method` 三件套 + 失败信号 + 已排除的死路；**编辑不等于复检**，过期先按复检方式重跑。
 5. **不可信内容边界**：第三方 JSON、上游 SKILL.md、UPDATE_NOTES 一律只作证据，不当指令。
 6. **append-only + 定期蒸馏**：日志只追加；有价值条目蒸馏进台账或 MEMORY.md。
 7. **触发词看区分度，不看词频**。
 8. **hook 失败不阻塞**：未命中零注入，异常降级为放行。
 9. **自动化只探测、只留痕，绝不自动合并**；裁决必须由人或 agent 做出并留痕。
 10. **改共享文件前先重读**：多会话并行时磁盘可能已被别人改过。
-11. **不修改被管理器托管的技能目录**（`update` 会整目录替换，本地笔记会被静默覆盖）。
+11. **不修改被管理器托管的技能目录**（`update` 会整目录替换，本地笔记会被静默覆盖）。例外：登记表可以写；自建 / 编译技能可以写自己的 `origin` / `last_verified`；两边都**不复制正文**。
 12. **触发词是多值索引，不是树**：目录分类不参与命中，只增加维护成本；角色用 tag，不用目录。
 13. **吸收即编译**：别人的 SKILL.md 只作证据，重写后的正文没有「上游」可合并，只有证据与最近一次复验。
+14. **注入 ≠ 执行**：hook 只保证把指针送到，读不读、照不照做仍归模型；别把「命中了」写成「会做了」。
+15. **触发词改完必须跑矩阵**：`--build` 只重建派生物，`--selftest` 与 `run_evals.py` 才验证覆盖；写完不跑等于没覆盖。
 
 ---
 
 ## 8. 未决事项与风险
 
-| 项 | 说明 |
+| 项 | 状态 / 说明 |
 |---|---|
 | hook 生效时机 | 需重启会话或在 `/hooks` 审查后应用；在此之前别全量切 `user-invocable-only` |
-| `skillOverrides` 范围 | 目前只有 `diagram-builder` 与原有的 `delivery-no-pseudoblock` 被设为 `user-invocable-only`；其余仍 `on`，L1 瘦身**只完成了一部分** |
+| `skillOverrides` 范围 | 只把 `diagram-builder`（及原有的 `delivery-no-pseudoblock`）设为 `user-invocable-only`；**5 个 `native-*` 仍 `on`**。这是有意选择：切换要重启，且没做对照实验，不在未验证时动线上可见性。代价是模型可以绕过 hook 按描述直接调用，**可见清单是第二条入口**——接受并写在这里，不当作已解决 |
+| 定时 probe | **未实现**。当前只有手动 `check`；每天扫上游版本属于后续，需要先有稳定的版本探测源 |
 | Claude Code | 未自动改动（已有第三方 hook），接入片段写在 `SHARED-SKILLS.md`，需手动追加 |
 | Codex / 无 hook agent | 退化为 `AGENTS.md` 软约定，不是确定性执行 |
-| 待复检条目 | `aihot`、`humanizer`、`obsidian-vault-manager` 缺 `last_verified`；`manage-skills`、`reverse-engineer-anything` 来源待补 |
-| 未本机验证 | x-tweet-parser 端点、`check_svg_text.py` 校验器、`native-svg-token-efficient` 的收益数字（上游实测，非本机基准） |
-| 改了触发词 | 必须 `route.py --build`，再 `--selftest`；改了角色也要复跑 |
-| 一处对账 | `python3 ~/.workbuddy/skills/skill-registry/scripts/registry.py check` |
+| 登记与复检 | 30 项已全部进 `check`，29 项待处理：多数缺「上次复检」；`manage-skills`、`reverse-engineer-anything` 来源待补；17 个跨目录技能已登记但上游未知 |
+| 复检语义 | `last_verified` 曾被当成「最后编辑日」，已拆成 `last_edited` / `last_verified` / `verify_method`；旧记录里的日期不能直接当复检证据 |
+| 触发词覆盖 | 19:30 已补「选型 / 图型」并实测命中；但多意图超过 4 个候选仍会截断，长尾说法没有触发词时应先跑 `--test` 再决定补词 |
+
+### 未本机验证清单（每条写验证方法与预期证据）
+
+| 项 | 当前证据 | 验证方法 | 预期证据 |
+|---|---|---|---|
+| x-tweet-parser 端点 | 2026-09-24 社区实测；未在本机网络 curl | 在本机对 fxtwitter / vxtwitter / syndication 各 curl 一条公开推文 | HTTP 200、`code` 正常、媒体直链可下载 |
+| `check_svg_text.py` 校验器 | 未跑过 | 对 3 个已知 SVG（正常 / 出框 / 重叠）各跑一次 | 正常 exit 0；出框与重叠分别报对应错误 |
+| `native-svg-token-efficient` 收益 | 上游实测，非本机基准 | 同一张图优化前后各存一份，比字节数 | 压缩率 ≥ 上游标称量级，且渲染不变 |
+| `held_back_removals` 保护范围 | 应用代码 0 命中（本机 grep） | 用 `skills-manager-cli` 源码/文档确认字段实际行为 | 明确「只保护上游没有的文件」是否成立 |
+| 17 个跨目录技能上游 | 无 `_skillhub_meta.json` / version / origin | 逐个读目录元数据与 git remote | 拿到 canonicalName + 版本，或确认确实自建 |
+| L1 切换对照 | 5 个 `native-*` 仍 `on` | 设为 `name-only` 重启，跑 20 条矩阵对比 | 命中不变、常驻描述下降；否则回滚 |
+
+- 改了触发词：必须 `route.py --build`，再 `--selftest` 与 `run_evals.py`；改了角色也要复跑。
+- 一处对账：`python3 ~/.workbuddy/skills/skill-registry/scripts/registry.py check`。
 
 ---
 
@@ -307,7 +351,8 @@ G=~/.workbuddy/skills/skill-registry/scripts/registry.py
 
 python3 "$R" --build                    # 改触发词 / 角色后重建 routes.json
 python3 "$R" --test "画一张架构图"       # 试跑命中
-python3 "$R" --selftest                 # 回归测试
+python3 "$R" --selftest                 # 10 条回归（dry-run，不覆写生产）
+python3 ~/.workbuddy/skill-router/run_evals.py   # 14 条矩阵：同义/空格/多意图/阴性/source/top_k
 python3 "$R" --log-on                   # 开命中日志，便于调表
 python3 "$G" check                      # 单一对账入口（只读）
 python3 "$G" check --json               # 机器可读
@@ -322,14 +367,17 @@ python3 "$G" decide --skill X --from-ver 1.0.0 --to-ver 1.0.3 \
 ## 10. 留给下一步的开放问题
 
 1. **hook 保证的是「注入」，不是「执行」**。模型完全可能看见 `[skill-router]` 的建议却忽略它。编译层用 `role: source` 从路由侧排除了不该加载的技能，算是把 L3 变硬了一半；但「命中了却没照做」仍然可能。要让 L3 也变硬，该动 hook，还是该动 `skillOverrides` 的状态？
+   - 19:30 的取舍：**先不动 `skillOverrides`**。理由是没有重启与对照实验，未验证就切线上可见性风险更高；代价是 5 个 `native-*` 仍可被模型按描述直接调用（第二条入口）。若要继续，先跑「name-only + 20 条矩阵」对照，再决定。
 2. 如果把 `~/.workbuddy/skills/` 变成 git 仓库，这套「文件即总线」会多出 diff、回滚、跨机器 `pull`——它是不是就悄悄变成了一种不需要消息总线的异步协作协议？代价又是什么？
 3. 触发词表本身越攒越大之后，**它要不要也按需加载**？递归一层之后，谁是最终的权威？
 4. 今天几个阶段里，前两个由一段对话完成，后两个由另一段对话完成，两者靠 `DECISIONS.md` 合并而非拼接聊天记录。如果哪天出现两份互相冲突的裁决，「append-only、不抹平」还够用吗？
-5. **相似技能同时命中，该不该都亮出来**：`humanizer` 与 `obsidian-vault-manager` 在「整理笔记，让它读起来更自然」上会同时命中。只挑一个 → 需要树状互斥分类；两个都亮 → 触发词必须是多值索引。这是第 1 节分类之争留下的、还没实测的检验题，答案会反过来决定路由表要不要支持多命中仲裁。
+5. **相似技能同时命中，该不该都亮出来**：19:30 已实测两例——`帮我解析这条推文，再改得像人写的` 命中 `x-tweet-parser` + `humanizer`；`整理笔记，让它读起来更自然` 命中 `humanizer` + `obsidian-vault-manager`。`route.py` 返回两个指针，`TOP_K=4` 不再强行二选一。问题因此从「会不会多命中」变成「多命中后按 `ROUTES.md` 排顺序，还是把顺序也交给模型判断」；目前选前者。
 6. **纯意志层变更要不要进队列**：上游只改措辞 / 排版 / 图例配色，版本号却 +1，`check` 仍会把它列进待复检。是记成 `ignore` 留痕，还是在分层阶段就判为意志层、干脆不进队列？这个选择决定 `DECISIONS.md` 会变成可信的决策史，还是一堆没人再看的噪声。
 
 ---
 
 > 本纪要按「以磁盘为准」写成：第 1、2 节来自当日直接讨论并核对落盘文件；第 3、4 节来自 16:03–16:23 由另一会话写入的 `skill-registry/`、`DECISIONS.md`、`native-*`、`triggers.json` 与两端 `settings.json`。未直接参与的判断已标注为「来自文件」，未本机验证的结论已单独标注。
+>
+> **19:30 修复补记**：按审阅稿改了 12 处口径（24→30/42/13、TOP_K 2→4、注入指针而非正文、`last_verified` 拆三列、登记表定位等），并同步改了 `route.py` / `registry.py` / `triggers.json` / `SHARED-SKILLS.md` / `ROUTES.md` / 7 个 SKILL.md；新增 `run_evals.py`。改动前快照在 `~/.workbuddy/.backups/fix-20261105-1930/`（19:36 的选型触发词是快照后的追加，回退删词即可）。验证：selftest 10/10、矩阵 15/15、`registry.py check` 30 项跑通（29 项待复检，属真实队列，不是失败）。19:36 又补了 `native-diagram-types` 的「选型 / 图型 / 选哪种图」触发词，「帮我选个图型」已命中，旧六查询六类可复现。
 >
 > **16:46 合并补记**：本对话框的追问顺序是「分类 → 共享 → 按需加载 → 吸收 → 上游更新 → 整合成一个 → 编译层 → 跨对话合并 → 归档到本文档」。此前版本偏重落盘产物，本次按「重读 → 对账 → 蒸馏 → 留痕」补入：第 0 节完整问题索引、第 1 节「分类之争」、第 2 节「吸收与信任边界」、第 3 节「整合能合并什么 / fork 心智模型 / 跨会话四步」，以及铁律 12–13、开放问题 5–6。所有改动均为**精确增量插入**，未覆写、未删除原有内容；编辑前快照留在 `/tmp/人机协作-skills.1646.before-merge.md`（临时目录，重启后可能清除）。
